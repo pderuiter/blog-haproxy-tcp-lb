@@ -1,0 +1,24 @@
+---
+galaxy_info:
+  role_name: haproxy_tcp_lb
+  namespace: pderuiter
+  author: Patrick de Ruiter
+  description: HAProxy TCP (layer 4) load balancing for PostgreSQL and Redis, as in the post's complete production example
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+    - name: Debian
+      versions:
+        - trixie
+    - name: EL
+      versions:
+        - "9"
+  galaxy_tags:
+    - haproxy
+    - loadbalancer
+    - tcp
+
+dependencies: []

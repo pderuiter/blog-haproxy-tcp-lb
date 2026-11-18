@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: haproxy_install
+  namespace: pderuiter
+  author: Patrick de Ruiter
+  description: Install HAProxy from the official repositories (vbernat PPA on Ubuntu, haproxy.debian.net on Debian, AppStream on RHEL)
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+    - name: Debian
+      versions:
+        - trixie
+    - name: EL
+      versions:
+        - "9"
+  galaxy_tags:
+    - haproxy
+    - loadbalancer
+
+dependencies: []

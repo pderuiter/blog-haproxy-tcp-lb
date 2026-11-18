@@ -1,0 +1,61 @@
+# Lint-only pipeline. Nothing here builds VMs or touches servers.
+#
+# Self-contained on purpose: the repo is a playbook + Terraform companion for a
+# blog post, not a single Ansible role, so it has no molecule scenario and no
+# collection to publish.
+stages:
+  - lint
+
+variables:
+  PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.pip-cache"
+
+.rules: &rules
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+lint:yaml:
+  stage: lint
+  image: python:3.12-slim
+  <<: *rules
+  cache:
+    paths: [.pip-cache/]
+  script:
+    - pip install "yamllint==1.38.0"
+    - yamllint .
+
+lint:ansible:
+  stage: lint
+  image: python:3.12-slim
+  <<: *rules
+  cache:
+    paths: [.pip-cache/]
+  script:
+    - pip install "ansible-core==2.20.1" "ansible-lint==26.10.1"
+    - cd ansible
+    - ansible-galaxy collection install -r requirements.yml
+    - ansible-lint --profile production
+
+lint:terraform:
+  stage: lint
+  image:
+    name: hashicorp/terraform:1.9
+    entrypoint: [""]
+  <<: *rules
+  script:
+    - cd terraform
+    - terraform fmt -check -recursive
+    - terraform init -backend=false -input=false
+    - terraform validate
+
+lint:tflint:
+  stage: lint
+  image:
+    name: ghcr.io/terraform-linters/tflint:v0.61.0
+    entrypoint: [""]
+  <<: *rules
+  script:
+    - cd terraform
+    - tflint --init
+    - tflint

@@ -1,0 +1,47 @@
+---
+- name: Install python3-debian (needed by deb822_repository)
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ensure /etc/apt/keyrings exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# Downloaded only once: the keyserver ignores If-Modified-Since and does not
+# always return byte-identical keys, so a plain get_url would report changes.
+- name: Check for the HAProxy repository signing key
+  ansible.builtin.stat:
+    path: "{{ _haproxy_install_key }}"
+  register: haproxy_install_key_file
+
+- name: Download the HAProxy repository signing key
+  ansible.builtin.get_url:
+    url: "{{ haproxy_install_ppa_key_url if ansible_facts['distribution'] == 'Ubuntu' else haproxy_install_debian_key_url }}"
+    dest: "{{ _haproxy_install_key }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: not haproxy_install_key_file.stat.exists
+
+- name: Add the HAProxy repository for branch {{ haproxy_install_version }}
+  ansible.builtin.deb822_repository:
+    name: haproxy-{{ haproxy_install_version }}
+    types: deb
+    uris: "{{ _haproxy_install_uri }}"
+    suites: "{{ _haproxy_install_suite }}"
+    components: main
+    signed_by: "{{ _haproxy_install_key }}"
+  register: haproxy_install_repo
+
+- name: Install HAProxy {{ haproxy_install_version }}
+  ansible.builtin.apt:
+    name: haproxy={{ haproxy_install_version }}.*
+    state: present
+    update_cache: "{{ haproxy_install_repo is changed }}"

@@ -1,0 +1,12 @@
+---
+# HAProxy branch from the official repositories, as in the post:
+# - Ubuntu 24.04: ppa:vbernat/haproxy-3.3. 3.3 is the newest branch built for
+#   24.04; it is short-lived and not LTS.
+# - Debian 13: haproxy.debian.net trixie-backports-3.4 (3.4 LTS).
+# - Ubuntu 26.04: set "3.4" to use ppa:vbernat/haproxy-3.4 (LTS).
+# - RHEL: ignored; AppStream ships 2.8.
+haproxy_install_version: "{{ '3.4' if ansible_facts['distribution'] == 'Debian' else '3.3' }}"
+
+# Signing key of the vbernat PPAs (Ubuntu) and of haproxy.debian.net (Debian)
+haproxy_install_ppa_key_url: "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3D653970FBAB0A890E4E4E9A0F14D8B0CF4EFE96"
+haproxy_install_debian_key_url: "https://haproxy.debian.net/haproxy-archive-keyring.gpg"

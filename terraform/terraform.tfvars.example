@@ -1,0 +1,16 @@
+proxmox_endpoint  = "https://pve.example.com:8006/"
+proxmox_api_token = "terraform@pve!blog=00000000-0000-0000-0000-000000000000"
+proxmox_insecure  = false
+node_name         = "pve"
+vm_datastore_id   = "local-lvm"
+bridge            = "vmbr0"
+gateway           = "10.0.0.254"
+dns_servers       = ["192.0.2.53"]
+ssh_public_key    = "ssh-ed25519 AAAAC3Nza... you@example.com"
+
+# One HAProxy VM. The post's config runs 4 threads (nbthread 4, cpu-map 0-3).
+# The PostgreSQL and Redis servers are yours; set their addresses in
+# ansible/group_vars/all/vars.yml.
+vms = {
+  haproxy1 = { ip = "10.0.0.10/24", groups = ["haproxy"], cores = 4, memory = 2048 }
+}

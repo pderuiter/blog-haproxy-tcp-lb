@@ -1,0 +1,6 @@
+---
+# This setup has no secrets: the pgsql-check user needs no password and the
+# stats page is open, as in the post. The file exists so every companion repo
+# has the same layout.
+# Copy to vault.yml and encrypt with: ansible-vault encrypt group_vars/all/vault.yml
+{}

@@ -1,0 +1,7 @@
+---
+- name: HAProxy TCP load balancer for PostgreSQL and Redis
+  hosts: haproxy
+  gather_facts: true
+  roles:
+    - role: haproxy_install
+    - role: haproxy_tcp_lb

@@ -1,0 +1,23 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+terraform.tfvars
+*.auto.tfvars
+
+# Ansible
+.ansible/
+.cache/
+*.retry
+ansible/inventory.yml
+ansible/group_vars/all/vault.yml
+.vault_pass*
+
+# Python / editors
+__pycache__/
+*.pyc
+.venv/
+.pip-cache/
+lab-inventory.yml
+.lab/

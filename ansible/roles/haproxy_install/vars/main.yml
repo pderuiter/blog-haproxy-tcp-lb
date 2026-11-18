@@ -1,0 +1,9 @@
+---
+_haproxy_install_key: "/etc/apt/keyrings/{{ 'haproxy-ppa.asc' if ansible_facts['distribution'] == 'Ubuntu' else 'haproxy.debian.net.gpg' }}"
+_haproxy_install_uri: >-
+  {{ 'https://ppa.launchpadcontent.net/vbernat/haproxy-' ~ haproxy_install_version ~ '/ubuntu'
+     if ansible_facts['distribution'] == 'Ubuntu' else 'https://haproxy.debian.net' }}
+_haproxy_install_suite: >-
+  {{ ansible_facts['distribution_release']
+     if ansible_facts['distribution'] == 'Ubuntu'
+     else ansible_facts['distribution_release'] ~ '-backports-' ~ haproxy_install_version }}

@@ -1,0 +1,14 @@
+---
+# HAProxy branch from the official repositories (see roles/haproxy_install):
+# 3.3 from ppa:vbernat/haproxy-3.3 on Ubuntu 24.04, 3.4 LTS on Debian 13.
+# haproxy_install_version: "3.3"
+
+# Your database and cache servers. The defaults are the post's addresses.
+# haproxy_tcp_lb_pg_primary_servers:
+#   - {name: pg-primary, address: 192.168.1.10, port: 5432}
+#   - {name: pg-standby1, address: 192.168.1.11, port: 5432, backup: true}
+# haproxy_tcp_lb_pg_replica_servers: [...]
+# haproxy_tcp_lb_redis_servers: [...]
+
+# nbthread 4 and "cpu-map auto:1/1-4 0-3" as in the post assume 4 CPUs.
+# haproxy_tcp_lb_nbthread: 4

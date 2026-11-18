@@ -1,0 +1,11 @@
+---
+profile: production
+
+exclude_paths:
+  - .cache/
+  - .git/
+  - .gitlab-ci.yml
+  - terraform/
+
+# FQCN is mandatory. Findings are fixed in code, not suppressed.
+skip_list: []

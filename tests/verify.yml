@@ -1,0 +1,64 @@
+---
+# Functional checks from the post. Run after site.yml, from the ansible/ directory:
+#   ansible-playbook ../tests/verify.yml
+- name: Verify the HAProxy TCP load balancer
+  hosts: haproxy
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Validate the configuration (haproxy -c)
+      ansible.builtin.command: haproxy -c -f /etc/haproxy/haproxy.cfg
+      changed_when: false
+
+    - name: Wait for the PostgreSQL, Redis and stats ports
+      ansible.builtin.wait_for:
+        port: "{{ item }}"
+        timeout: 30
+      loop: [5432, 5433, 6379, 8404]
+
+    - name: Read server status from the runtime API (show stat)
+      ansible.builtin.shell: |
+        set -o pipefail
+        echo "show stat" | socat stdio /run/haproxy/admin.sock | cut -d, -f1,2,18
+      args:
+        executable: /bin/bash
+      register: verify_stat
+      changed_when: false
+      until: verify_stat.stdout is search('pg_primary,pg-primary,UP')
+      retries: 10
+      delay: 3
+
+    - name: Show server status
+      ansible.builtin.debug:
+        var: verify_stat.stdout_lines
+
+    - name: Check that the primary and exactly one Redis server (the master) are UP
+      ansible.builtin.assert:
+        that:
+          - verify_stat.stdout is search('pg_primary,pg-primary,UP')
+          - verify_stat.stdout_lines | select('match', '^redis_servers,redis[0-9]+,UP') | list | length == 1
+        fail_msg: "Expected pg-primary UP and one Redis master UP; see the status above"
+
+    - name: Send PING through the Redis frontend
+      ansible.builtin.shell: |
+        set -o pipefail
+        exec 3<>/dev/tcp/127.0.0.1/6379
+        printf 'PING\r\nINFO replication\r\nQUIT\r\n' >&3
+        timeout 3 cat <&3
+      args:
+        executable: /bin/bash
+      register: verify_redis
+      changed_when: false
+      failed_when: verify_redis.stdout is not search('\+PONG') or verify_redis.stdout is not search('role:master')
+
+    - name: Fetch the stats page
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8404/stats
+        return_content: false
+
+    - name: Fetch the Prometheus metrics
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8404/metrics
+        return_content: true
+      register: verify_metrics
+      failed_when: verify_metrics.content is not search('haproxy_backend_status')

@@ -1,0 +1,4 @@
+---
+# The roles use ansible.builtin modules only; no extra collections are needed.
+# Tested with ansible-core 2.20.1.
+collections: []

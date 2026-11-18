@@ -1,0 +1,30 @@
+---
+# There is no official HAProxy repository for RHEL: AppStream ships 2.8 (LTS).
+- name: Install HAProxy from AppStream
+  ansible.builtin.dnf:
+    name: haproxy
+    state: present
+
+# The RHEL unit does not create /run/haproxy, which the post's
+# "stats socket /run/haproxy/admin.sock" needs (the Debian unit does).
+- name: Ensure the haproxy.service drop-in directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/haproxy.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Let systemd create /run/haproxy
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/haproxy.service.d/runtime-directory.conf
+    content: |
+      [Service]
+      RuntimeDirectory=haproxy
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Apply the drop-in before HAProxy starts
+  ansible.builtin.meta: flush_handlers

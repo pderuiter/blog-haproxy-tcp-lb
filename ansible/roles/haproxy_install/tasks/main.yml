@@ -1,0 +1,8 @@
+---
+- name: Install HAProxy on Debian and Ubuntu
+  ansible.builtin.include_tasks: Debian.yml
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install HAProxy on RHEL and compatibles
+  ansible.builtin.include_tasks: RedHat.yml
+  when: ansible_facts['os_family'] == 'RedHat'

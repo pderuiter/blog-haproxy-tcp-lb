@@ -24,7 +24,9 @@
         executable: /bin/bash
       register: verify_stat
       changed_when: false
-      until: verify_stat.stdout is search('pg_primary,pg-primary,UP')
+      until:
+        - verify_stat.stdout is search('pg_primary,pg-primary,UP')
+        - verify_stat.stdout is search('pg_primary,pg-standby1,DOWN')
       retries: 10
       delay: 3
 
@@ -32,12 +34,13 @@
       ansible.builtin.debug:
         var: verify_stat.stdout_lines
 
-    - name: Check that the primary and exactly one Redis server (the master) are UP
+    - name: Check that only the primary is UP for writes, and exactly one Redis server (the master)
       ansible.builtin.assert:
         that:
           - verify_stat.stdout is search('pg_primary,pg-primary,UP')
+          - verify_stat.stdout is search('pg_primary,pg-standby1,DOWN')
           - verify_stat.stdout_lines | select('match', '^redis_servers,redis[0-9]+,UP') | list | length == 1
-        fail_msg: "Expected pg-primary UP and one Redis master UP; see the status above"
+        fail_msg: "Expected pg-primary UP, pg-standby1 DOWN in pg_primary and one Redis master UP; see the status above"
 
     - name: Send PING through the Redis frontend
       ansible.builtin.shell: |

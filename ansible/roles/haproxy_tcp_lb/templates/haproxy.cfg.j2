@@ -56,7 +56,13 @@ frontend pg_write
     tcp-request connection reject if too_many_conns
 
 backend pg_primary
-    option pgsql-check user {{ haproxy_tcp_lb_pgsql_check_user }}
+    # Only the node with in_hot_standby = off (the primary) passes
+{% set _u = haproxy_tcp_lb_pgsql_check_user %}
+{% set _d = haproxy_tcp_lb_pg_check_database %}
+    option tcp-check
+    tcp-check connect
+    tcp-check send-binary {{ '%08x' | format(_u | length + _d | length + 25) }}000300007573657200{{ _u.encode().hex() }}00646174616261736500{{ _d.encode().hex() }}00005800000004
+    tcp-check expect binary 696e5f686f745f7374616e646279006f666600
 {% for s in haproxy_tcp_lb_pg_primary_servers %}
     server {{ s.name }} {{ s.address }}:{{ s.port }} check{{ ' backup' if s.backup | default(false) else '' }}{{ '  # ' ~ s.comment if s.comment is defined else '' }}
 {% endfor %}

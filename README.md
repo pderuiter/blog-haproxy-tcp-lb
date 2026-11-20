@@ -8,7 +8,7 @@ a PostgreSQL cluster and Redis.
 
 | Port | Frontend | Backend |
 |------|----------|---------|
-| 5432 | `pg_write` (rejects new connections above 5000) | `pg_primary`: the primary, a standby as `backup`, `option pgsql-check` |
+| 5432 | `pg_write` (rejects new connections above 5000) | `pg_primary`: the primary, a standby as `backup`; a `tcp-check` that only passes on `in_hot_standby` = `off` |
 | 5433 | `pg_read` | `pg_replicas`: the standbys with `leastconn`, the primary as fallback |
 | 6379 | `redis` | `redis_servers`: `balance first` and a `tcp-check` that only passes on `role:master` |
 | 8404 | `stats` | stats page at `/stats`, Prometheus metrics at `/metrics` |
@@ -28,8 +28,20 @@ HAProxy comes from the official repositories, as in the post:
 - ansible-core >= 2.15 on your workstation.
 - PostgreSQL and Redis servers that HAProxy can reach.
   - The defaults are the post's addresses: `192.168.1.10-12` and `192.168.1.20-22`.
-  - The health check connects as user `haproxy` (`option pgsql-check user haproxy`). It needs
-    no password: PostgreSQL answering the startup packet is enough.
+  - PostgreSQL 14 or newer: the primary check reads the `in_hot_standby` parameter that the
+    server reports after login. A standby reports `on` and gets no writes; after a failover the
+    promoted standby passes and takes over. Stop the old primary before you promote.
+  - The checks connect as user `haproxy` to database `postgres`. The primary check must log in,
+    so create the role without privileges and trust it from the HAProxy address only:
+
+    ```sql
+    CREATE ROLE haproxy LOGIN;
+    ```
+
+    ```text
+    # pg_hba.conf, above the other host lines (10.0.0.10 = HAProxy)
+    host  postgres  haproxy  10.0.0.10/32  trust
+    ```
 
 ## Quick start
 
@@ -66,7 +78,8 @@ All variables are in `ansible/roles/haproxy_tcp_lb/defaults/main.yml`. The most 
 | `haproxy_tcp_lb_pg_primary_servers` | post's primary + standby1 (backup) | `pg_primary` servers: `name`, `address`, `port`, optional `backup` |
 | `haproxy_tcp_lb_pg_replica_servers` | standby1, standby2, primary (backup) | `pg_replicas` servers |
 | `haproxy_tcp_lb_redis_servers` | redis1..3 | Redis servers; only the master passes the check |
-| `haproxy_tcp_lb_pgsql_check_user` | `haproxy` | user for `option pgsql-check` |
+| `haproxy_tcp_lb_pgsql_check_user` | `haproxy` | check user (`pgsql-check` and the primary check) |
+| `haproxy_tcp_lb_pg_check_database` | `postgres` | database the primary check logs in to |
 | `haproxy_tcp_lb_nbthread` / `haproxy_tcp_lb_cpu_map` | `4` / `auto:1/1-4 0-3` | threads and CPU pinning |
 
 There are no secrets. `group_vars/all/vault.yml.example` only exists so all companion repos have
@@ -76,8 +89,12 @@ the same layout.
 
 - `tests/lab.sh` starts the setup on one Docker host:
   - systemd containers act as the VMs;
-  - `postgres:17-alpine` and `redis:7-alpine` run on the post's addresses.
-- It then runs `site.yml` twice (the second run reports `changed=0`) and `tests/verify.yml`.
+  - `postgres:17-alpine` (a primary and two streaming standbys) and `redis:7-alpine` run on the
+    post's addresses.
+- It then runs `site.yml` twice (the second run reports `changed=0`), `tests/verify.yml`, and
+  writes through port 5432 and reads through 5433.
+- `tests/lab.sh failover` stops the primary and promotes a standby: writes are refused until the
+  promotion, then reach the new primary.
 - Tested with Ubuntu 24.04 (HAProxy 3.3.17), Debian 13 (3.4.7) and AlmaLinux 9 (2.8.14).
 - CI (`.gitlab-ci.yml`) runs yamllint, ansible-lint (production profile), `terraform fmt`,
   `validate` and tflint.

@@ -6,8 +6,11 @@ haproxy_tcp_lb_cpu_map: "auto:1/1-4 0-3"
 
 haproxy_tcp_lb_stats_port: 8404
 
-# PostgreSQL: user for "option pgsql-check" (needs no password, see the post)
+# PostgreSQL check user, for "option pgsql-check" (pg_replicas) and the primary check (pg_primary).
+# The primary check logs in to read in_hot_standby: trust this role from the HAProxy address
+# in pg_hba.conf (see the post). It needs no privileges.
 haproxy_tcp_lb_pgsql_check_user: haproxy
+haproxy_tcp_lb_pg_check_database: postgres
 haproxy_tcp_lb_pg_write_port: 5432
 haproxy_tcp_lb_pg_read_port: 5433
 haproxy_tcp_lb_pg_max_frontend_conns: 5000
